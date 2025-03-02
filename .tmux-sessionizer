@@ -1,0 +1,25 @@
+#!/usr/bin/env fish
+# .tmux-sessionizer - Example tmux session configuration
+# Creates a session named "fmux" with two vertically split panes
+
+# Check if the session already exists
+if tmux has-session -t fmux 2>/dev/null
+  echo "Session 'fmux' already exists, attaching..."
+  tmux attach-session -t fmux
+else
+  # Create a new session named "fmux"
+  tmux new-session -d -s fmux
+end
+
+# Split the window vertically (creating two side-by-side panes)
+tmux split-window -h -t fmux
+
+# Optional: You can run specific commands in each pane
+# tmux send-keys -t fmux:0.0 "echo 'Left pane'" C-m
+# tmux send-keys -t fmux:0.1 "echo 'Right pane'" C-m
+
+# Optional: Adjust the pane sizes if needed
+tmux resize-pane -t fmux:1.1 -x 50%  # Set left pane to 50% width
+
+# Select the first pane
+tmux select-pane -t fmux:1.1
