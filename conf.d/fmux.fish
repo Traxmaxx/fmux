@@ -42,9 +42,19 @@ function fmux_fm
         set -l home_sessionizer "$HOME/.tmux-sessionizer"
         
         if test -f "$sessionizer_file"
-            $fmux_tmux_cmd send-keys -t $session_name "source $sessionizer_file" C-m
+            # Create a detached window to run the sessionizer
+            $fmux_tmux_cmd new-window -d -t "$session_name" -n "sessionizer" -c "$directory"
+            $fmux_tmux_cmd send-keys -t "$session_name:sessionizer" "source $sessionizer_file" C-m
+            # Wait briefly for the sessionizer to run
+            # sleep 0.2
+            # Kill the temporary window
+            $fmux_tmux_cmd  kill-window -t "$session_name:sessionizer"
         else if test -f "$home_sessionizer"
-            $fmux_tmux_cmd send-keys -t $session_name "source $home_sessionizer" C-m
+            # Same approach with home sessionizer
+            $fmux_tmux_cmd new-window -d -t "$session_name" -n "sessionizer" -c "$directory"
+            $fmux_tmux_cmd send-keys -t "$session_name:sessionizer" "source $home_sessionizer" C-m
+            # sleep 0.2
+            $fmux_tmux_cmd kill-window -t "$session_name:sessionizer"
         end
     end
     

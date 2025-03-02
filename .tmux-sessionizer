@@ -6,6 +6,8 @@
 if tmux has-session -t fmux 2>/dev/null
   echo "Session 'fmux' already exists, attaching..."
   tmux attach-session -t fmux
+
+  exit 0
 else
   # Create a new session named "fmux"
   tmux new-session -d -s fmux
