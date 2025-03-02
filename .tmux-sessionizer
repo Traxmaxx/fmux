@@ -2,17 +2,6 @@
 # .tmux-sessionizer - Example tmux session configuration
 # Creates a session named "fmux" with two vertically split panes
 
-# Check if the session already exists
-if tmux has-session -t fmux 2>/dev/null
-  echo "Session 'fmux' already exists, attaching..."
-  tmux attach-session -t fmux
-
-  exit 0
-else
-  # Create a new session named "fmux"
-  tmux new-session -d -s fmux
-end
-
 # Split the window vertically (creating two side-by-side panes)
 tmux split-window -h -t fmux
 
