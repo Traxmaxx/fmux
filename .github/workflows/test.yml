@@ -1,0 +1,34 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Install Fish shell
+        run: |
+          sudo apt-add-repository ppa:fish-shell/release-3
+          sudo apt-get update
+          sudo apt-get install -y fish
+      
+      - name: Make test scripts executable
+        run: |
+          chmod +x tests/tmux
+          chmod +x tests/run_tests.fish
+          chmod +x tests/test_*.fish
+      
+      - name: Run tests
+        shell: fish {0}
+        run: |
+          fish tests/run_tests.fish
