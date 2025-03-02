@@ -4,9 +4,6 @@
 set -l test_dir (status dirname)
 set -l root_dir (dirname $test_dir)
 
-# Make the mock tmux executable
-chmod +x $test_dir/tmux
-
 # Add the test directory to PATH so our mock tmux is found first
 set -gx PATH $test_dir $PATH
 
@@ -18,6 +15,7 @@ end
 
 # Source the plugin file to test
 source $root_dir/conf.d/fmux.fish
+source $test_dir/test_helpers.fish
 
 # Test helper function
 function assert

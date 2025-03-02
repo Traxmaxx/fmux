@@ -4,42 +4,22 @@
 set -l test_dir (status dirname)
 set -l root_dir (dirname $test_dir)
 
-# Make the mock tmux executable
-chmod +x $test_dir/tmux
-
 # Add the test directory to PATH so our mock tmux is found first
 set -gx PATH $test_dir $PATH
 
 # Source the plugin file to test
 source $root_dir/conf.d/fmux.fish
-
-# Test helper function
-function assert
-    set -l condition $argv[1]
-    set -l message $argv[2]
-    
-    if eval $condition
-        set_color green
-        echo "✓ $message"
-        set_color normal
-        return 0
-    else
-        set_color red
-        echo "✗ $message"
-        set_color normal
-        return 1
-    end
-end
+source $test_dir/test_helpers.fish
 
 # Test __fmux_list_tmux_sessions function
 function test_fmux_list_tmux_sessions
     set -l result (__fmux_list_tmux_sessions)
-    # echo "Result of __fmux_list_tmux_sessions: $result"
+    echo "Result of __fmux_list_tmux_sessions: $result"
     
     # Assert based on the expected output
-    assert "contains 'session1' $result" "Should list session1"
-    assert "contains 'session2' $result" "Should list session2"
-    assert "contains 'dev_project' $result" "Should list dev_project"
+    assert "contains 'session1' '$result'" "Should list session1"
+    assert "contains 'session2' '$result'" "Should list session2"
+    assert "contains 'dev_project' '$result'" "Should list dev_project"
     
     # Return success regardless of assertion result
     return 0
@@ -63,7 +43,7 @@ end
 function test_fmux_fmk_exact_match
     # Capture output
     set -l output (fmux_fmk "session1" 2>&1)
-    # echo "Output of fmux_fmk with session1: $output"
+    echo "Output of fmux_fmk with session1: $output"
     
     # Assert based on the expected output
     assert "echo '$output' | grep -q 'Killing exact match: session1'" "Should kill exact match session"
@@ -76,7 +56,7 @@ end
 function test_fmux_fmk_partial_match
     # Capture output
     set -l output (fmux_fmk "dev" 2>&1)
-    # echo "Output of fmux_fmk with dev: $output"
+    echo "Output of fmux_fmk with dev: $output"
     
     # Assert based on the expected output
     assert "echo '$output' | grep -q 'Killing partial match: dev_project'" "Should kill partial match session"

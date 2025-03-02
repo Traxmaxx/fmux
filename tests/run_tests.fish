@@ -7,9 +7,6 @@ set -l test_files $test_dir/test_*.fish
 set -l failed_tests 0
 set -l total_tests 0
 
-# Make the mock tmux executable
-chmod +x $test_dir/tmux
-
 echo "=== Running fmux plugin tests ==="
 echo
 

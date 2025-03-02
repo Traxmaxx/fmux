@@ -24,7 +24,6 @@ jobs:
       
       - name: Make test scripts executable
         run: |
-          chmod +x tests/tmux
           chmod +x tests/run_tests.fish
           chmod +x tests/test_*.fish
       
