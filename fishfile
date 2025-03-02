@@ -1,0 +1,5 @@
+# Fisher plugin manifest file for fmux
+functions/fmux.fish
+conf.d/fmux.fish
+completions/fmux_fm.fish
+completions/fmux_fmk.fish
