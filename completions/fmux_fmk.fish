@@ -8,7 +8,7 @@ end
 # Function to get session description
 function __fmux_get_session_description
     set -l session $argv[1]
-    command tmux list-sessions -F "#{session_name}~#{session_windows} • #{t:session_activity} • #{pane_current_command})" 2>/dev/null | grep "^$session~" | cut -d "~" -f 2
+    command tmux list-sessions -F "#{session_name}~#{session_windows} • #{t:session_activity} • #{pane_current_command}" 2>/dev/null | grep "^$session~" | cut -d "~" -f 2
 end
 
 # Sessions
