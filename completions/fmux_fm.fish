@@ -12,11 +12,11 @@ function __fmux_get_session_description
 end
 
 # Options
-complete -c fmux_fm -s d -d "Create/attach to session based on directory" -r -a "(__fish_complete_directories)"
-complete -c fmux_fm -s f -d "Find directory and create/attach to session" -f
+complete -e -c fmux_fm -s d -d "Create/attach to session based on directory" -r -a "(__fish_complete_directories)"
+complete -e -c fmux_fm -s f -d "Find directory and create/attach to session" -f
 
 # Sessions
 for session in (__fmux_list_tmux_sessions)
     set -l s_description (__fmux_get_session_description "$session")
-    complete -c fmux_fm -n "__fish_is_first_arg" -f -a "$session" -d "$s_description"
+    complete -e -c fmux_fm -n "__fish_is_first_arg" -f -a "$session" -d "$s_description"
 end
