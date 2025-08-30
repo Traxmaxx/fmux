@@ -16,7 +16,7 @@ end
 # Set default search directories for -f option if not already set
 # TODO: make this configurable
 if not set -q fmux_search_dirs
-    set -g fmux_search_dirs "$HOME" #"$HOME/dev" "$HOME/src" "$HOME/projects" "$HOME/workspace"
+    set -g fmux_search_dirs "$HOME/sites" "$HOME/.config"
 end
 
 # Complete session names helper
