@@ -111,7 +111,7 @@ Usage:
     fmux_fm -d|--directory=[directory]   - Create/attach to session based on directory
     fmux_fm -f|--find                    - Find directory and create/attach to session
 
-Tip: Create function aliases to allow direct use ogf fmux as fm and fmk commands
+Tip: Create function aliases to allow direct use fmux as fm and fmk commands
        alias fm='fmux_fm'
        alias fmk='fmux_fmk'"""
         
