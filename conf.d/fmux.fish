@@ -14,8 +14,9 @@ if not set -q fmux__tmux_cmd
 end
 
 # Set default search directories for -f option if not already set
+# TODO: make this configurable
 if not set -q fmux_search_dirs
-    set -g fmux_search_dirs "$HOME/dev" "$HOME/src" "$HOME/projects" "$HOME/workspace" "$HOME"
+    set -g fmux_search_dirs "$HOME" #"$HOME/dev" "$HOME/src" "$HOME/projects" "$HOME/workspace"
 end
 
 # Complete session names helper
@@ -66,7 +67,7 @@ function fmux_fm
     end
     
     function select_with_fzf -a prompt items
-        printf '%s\n' $items | fzf +m --cycle -1 --height=8 --layout=reverse-list --prompt="$prompt> "
+        printf '%s\n' $items 2>/dev/null | fzf +m --cycle -1 --height=8 --layout=reverse-list --prompt="$prompt> "
     end
     
     function select_with_menu -a prompt items
@@ -84,6 +85,7 @@ function fmux_fm
             echo $items[(math $reply)]
             return 0
         end
+        
         return 1
     end
     
@@ -96,85 +98,103 @@ function fmux_fm
     end
     
     # Parse arguments
-    if test (count $argv) -gt 0
-        # Directory mode (-d)
-        if test "$argv[1]" = "-d"
-            if test (count $argv) -lt 2
-                echo "Error: Directory path required with -d option"
-                return 1
-            end
-            
-            set -l directory $argv[2]
-            if not test -d "$directory"
-                echo "Error: Directory does not exist: $directory"
-                return 1
-            end
-            
-            create_session_from_dir "$directory"
-            set -e _fm_tmux_cmd
-            return 0
+    argparse 'h/help' 'd/directory' 'f/find' -- $argv
+    or return 0
+    # Checking for _flag_h and _flag_help is equivalent
+    # We check if it has been given at least once
+    if set -ql _flag_h
+echo """fmux fm - Enhanced Tmux Session Manager
+Usage: 
+    fmux_fm                              - Interactive session selection
+    fmux_fm [session_name]               - Create/attach to named session
+    fmux_fm [session_name] [window_name] - Create/attach to specific window
+    fmux_fm -d|--directory=[directory]   - Create/attach to session based on directory
+    fmux_fm -f|--find                    - Find directory and create/attach to session
+
+Tip: Create function aliases to allow direct use ogf fmux as fm and fmk commands
+       alias fm='fmux_fm'
+       alias fmk='fmux_fmk'"""
+        
+        return 1
+    end
+
+
+    # Directory mode (-d)
+    if set -ql _flag_d
+        if test (count $argv) -lt 1
+            echo "Error: Directory path required with -d option"
+            return 1
         end
         
-        # Find mode (-f)
-        if test "$argv[1]" = "-f"
-            if not type -q fzf
-                echo "Error: fzf is required for directory finding mode"
-                return 1
-            end
-            
-            set -l selected (find $search_dirs -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | fzf)
-            
-            if test -n "$selected"
-                create_session_from_dir "$selected"
-            end
-            
-            set -e _fm_tmux_cmd
-            return 0
+        set -l directory $argv
+        if not test -d "$directory"
+            echo "Error: Directory does not exist: $directory"
+            return 1
         end
         
-        # Session name provided
+        create_session_from_dir "$directory"
+        set -e _fm_tmux_cmd
+        return 0
+    end
+        
+    # Find mode (-f)
+    if set -ql _flag_f
+        if not type -q fzf
+            echo "Error: fzf is required for directory finding mode"
+            return 1
+        end
+        
+        set -l selected (find $fmux_search_dirs -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | fzf)
+        
+        if test -n "$selected"
+            create_session_from_dir "$selected"
+        end
+        
+        set -e _fm_tmux_cmd
+        return 0
+    end
+    
+    # Session name provided
+    if test (count $argv) -ge 1
         set -l session_arg $argv[1]
+        set -l window_arg ""
+        if test (count $argv) -ge 2
+            set window_arg $argv[2]
+        end
+
         set -l attach ""
-        
+
         # Try exact match first, then partial match
         if $fmux_tmux_cmd has-session -t "$session_arg" 2>/dev/null
             set attach "$session_arg"
         else
-            # Try partial match
             for session in ($fmux_tmux_cmd ls -F '#S' 2>/dev/null)
-                set -l session_lower (string lower $session)
-                set -l arg_lower (string lower $session_arg)
-                
-                if string match -q "$arg_lower*" "$session_lower"
-                    echo "Matched session: $session"
+                set -l session_lower (string lower -- "$session")
+                set -l arg_lower (string lower -- "$session_arg")
+                if string match -q -- "$arg_lower*" "$session_lower"
                     set attach "$session"
                     break
                 end
             end
         end
-        
+
         if test -n "$attach"
-            # Session found, handle window if specified
-            if test (count $argv) -gt 1
-                set -l window_arg $argv[2]
+            # If a window was provided, try to use it
+            if test -n "$window_arg"
                 set -l window ""
-                
-                # Check if numeric window index or try to match window name
-                if string match -qr '^[0-9]+$' "$window_arg"
+                if string match -qr -- '^[0-9]+$' -- "$window_arg"
                     set window "$window_arg"
                 else
-                    for win in ($fmux_tmux_cmd list-windows -F '#W' -t "$attach")
-                        set -l win_lower (string lower $win)
-                        set -l arg_lower (string lower $window_arg)
-                        
-                        if string match -q "$arg_lower*" "$win_lower"
-                            echo "Matched window: $win"
+                    for win in ($fmux_tmux_cmd list-windows -F '#W' -t "$attach" 2>/dev/null)
+                        set -l win_lower (string lower -- "$win")
+                        set -l warg_lower (string lower -- "$window_arg")
+                        if string match -q -- "$warg_lower*" "$win_lower"
                             set window "$win"
                             break
                         end
                     end
                 end
-                
+
                 if test -n "$window"
                     switch_to "$attach:$window"
                 else
@@ -183,44 +203,46 @@ function fmux_fm
                     switch_to "$attach:$window_arg"
                 end
             else
-                # No window specified
                 switch_to "$attach"
             end
         else
-            # Create new session
-            if test (count $argv) -gt 1
-                echo "Creating new session $session_arg with window $argv[2]"
-                $fmux_tmux_cmd new -s "$session_arg" -n "$argv[2]"
+            # Create new session (and window if provided)
+            if test -n "$window_arg"
+                echo "Creating new session $session_arg with window $window_arg"
+                $fmux_tmux_cmd new -s "$session_arg" -n "$window_arg"
             else
                 echo "Creating new session $session_arg"
                 $fmux_tmux_cmd new -s "$session_arg"
             end
         end
-    else
-        # No arguments - interactive selection
-        
-        # Check if tmux has active sessions
-        if not $fmux_tmux_cmd ls >/dev/null 2>&1
-            $fmux_tmux_cmd new
-            set -e _fm_tmux_cmd
-            return 0
-        end
-        
-        # Select session
-        set -l sessions ($fmux_tmux_cmd ls -F '#S')
-        set -l attach (select_item "Choose session" $sessions)
-        
-        if test -n "$attach"
-            # Select window if multiple exist
-            set -l windows ($fmux_tmux_cmd list-windows -t "$attach" -F '#W')
-            if test (count $windows) -gt 1
-                set -l window (select_item "Choose window" $windows)
-                if test -n "$window"
-                    switch_to "$attach:$window"
-                end
-            else
-                switch_to "$attach"
+
+        # Done handling arguments; do not fall through to interactive UI
+        return 0
+    end
+
+    ####
+    # No arguments - interactive selection
+    ####
+    # Check if tmux has active sessions
+    if not $fmux_tmux_cmd ls 2>/dev/null
+        echo "$argv"
+        echo "No active sessions found"
+    end
+    
+    # Select session
+    set -l sessions ($fmux_tmux_cmd ls -F '#S' 2>/dev/null)
+    set -l attach (select_item "Choose session" $sessions)
+    
+    if test -n "$attach"
+        # Select window if multiple exist
+        set -l windows ($fmux_tmux_cmd list-windows -t "$attach" -F '#W')
+        if test (count $windows) -gt 1
+            set -l window (select_item "Choose window" $windows)
+            if test -n "$window"
+                switch_to "$attach:$window"
             end
+        else
+            switch_to "$attach"
         end
     end
 end
@@ -231,6 +253,17 @@ end
 #   - With session_name: Kills the matching session
 
 function fmux_fmk
+    # Parse arguments
+    argparse 'h/help' -- $argv
+    or return 0
+    # Checking for _flag_h and _flag_help is equivalent
+    # We check if it has been given at least once
+    if set -ql _flag_h
+        echo "Tmux Kill Session" >&2
+        echo "Usage: fmux_fmk [-h | --help] <sessionname>" >&2
+        return 1
+    end
+
     # Check if tmux is running with active sessions
     if not $fmux_tmux_cmd ls >/dev/null 2>&1
         echo "No tmux sessions running."
@@ -238,7 +271,7 @@ function fmux_fmk
     end
 
     # If no session name provided, list available sessions
-    if test -z "$argv[1]"
+    if test -z "$argv"
         echo "No session name provided"
         echo "Available sessions:"
         $fmux_tmux_cmd list-sessions
